@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "project-name"
+version = "0.0.1"
+description = ""
+authors = ["Petr Lavrov <calmmage@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0" # ugly because of langchain
+# for stability, use frozen-app-name branch
+#calmlib = { git = "https://github.com/calmmage/calmlib.git", branch = "main" }
+bot-lib = { git = "https://github.com/calmmage/bot-lib.git", branch = "main" }
+calmapp = { git = "https://github.com/calmmage/calmapp.git", branch = "main" }
+pytest = "*"
+loguru = "*"
+toml = "*"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = ">=1.0.0"
+tqdm = "*"
+black = "*"
+pre-commit = "*"
+# temporary hacks because I messed up the dependencies
+langchain-anthropic = "*"
+langchain-openai = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[template]
+version = "0.1.0"  # split lib into app and handler, update to new bot-lib with calmapp extracted
+url = "https://github.com/calmmage/bot-lib-bot-template.git"
+author = "Petr Lavrov <petrlavrov@calmmage.com>"
+description = "A template for creating a bot using calmapp and bot-lib"
