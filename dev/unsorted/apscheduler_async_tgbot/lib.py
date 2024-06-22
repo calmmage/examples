@@ -3,6 +3,10 @@ from calmapp import App
 
 
 class MyHandler(Handler):
+    """"""
+
+    name = "my_handler"
+
     commands = {
         "setup_scheduled_reminders": "setup_reminders",
         "stop_reminders": "stop_reminders",
@@ -14,7 +18,7 @@ class MyHandler(Handler):
 
         assert app.scheduler is not None
         # todo: store jobs in db for persistence
-        job_id = chat_id  # generate id?
+        job_id = str(chat_id)  # generate id?
 
         app.scheduler.core.add_job(
             self.send_safe,
@@ -28,6 +32,6 @@ class MyHandler(Handler):
         # stop reminders
         chat_id = message.chat.id
         assert app.scheduler is not None
-        job_id = chat_id
+        job_id = str(chat_id)
         app.scheduler.core.remove_job(job_id)
         await self.answer_safe(message, "Reminders stopped")
