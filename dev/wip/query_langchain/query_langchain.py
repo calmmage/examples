@@ -1,23 +1,7 @@
-from openai import Client
+import os
 from dotenv import load_dotenv
 from langchain.prompts import ChatPromptTemplate
-
-# from langchain.schema import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
-
-# llm = ChatOpenAI(
-#     model="gpt-4o",
-#     temperature=0,
-#     max_tokens=None,
-#     timeout=None,
-#     max_retries=2,
-#     # api_key="...",  # if you prefer to pass api key in directly instaed of using env vars
-#     # base_url="...",
-#     # organization="...",
-#     # other params...
-# )
-from dotenv import load_dotenv
-import os
 
 
 def get_langfuse_callback(
@@ -52,6 +36,15 @@ def _assume_alternating_messages(warmup_messages):
             yield ("ai", msg)
 
 
+role_map = {
+    "system": "system",
+    "user": "human",
+    "assistant": "ai",
+    "human": "human",
+    "ai": "ai",
+}
+
+
 def build_langchain_prompt(
     system: str, warmup_messages=None, prompt_template="{prompt}"
 ) -> ChatPromptTemplate:
@@ -65,22 +58,10 @@ def build_langchain_prompt(
             warmup_messages = _assume_alternating_messages(warmup_messages)
         elif isinstance(warmup_messages[0], dict):
             for msg in warmup_messages:
-                # if msg["role"] == "system":
-                #     messages.append(SystemMessage(content=msg["content"]))
-                # elif msg["role"] == "user":
-                #     messages.append(HumanMessage(content=msg["content"]))
-                # elif msg["role"] == "assistant":
-                #     messages.append(AIMessage(content=msg["content"]))
-                if msg["role"] == "system":
-                    messages.append(("system", msg["content"]))
-                elif msg["role"] == "user":
-                    messages.append(("human", msg["content"]))
-                elif msg["role"] == "assistant":
-                    messages.append(("ai", msg["content"]))
+                messages.append((role_map[msg["role"]], msg["content"]))
         messages.extend(warmup_messages)
-    # messages.append(HumanMessage(content=escape_curly_braces(prompt_template)))
+
     # messages.append(HumanMessage(content=prompt_template))
-    # messages.append(("human", escape_curly_braces(prompt_template)))
     messages.append(("human", prompt_template))
     return ChatPromptTemplate.from_messages(messages=messages)
 
@@ -96,9 +77,10 @@ def query_langchain(
     max_retries=2,
     **kwargs
 ) -> str:
+    config = {}
     if use_langfuse:
         langfuse_callback = get_langfuse_callback()
-        kwargs["callbacks"] = langfuse_callback
+        config["callbacks"] = [langfuse_callback]
     # Initialize the language model
     llm = ChatOpenAI(
         model_name=model_name,
@@ -114,54 +96,13 @@ def query_langchain(
 
     # Set up the LangChain chain
     chain = chat_prompt | llm
-    # Run the query
-    response = chain.invoke(
-        input={"prompt": prompt}
-        # input={},
-        # prompt=prompt,
-    )
+    result = chain.invoke(input={"prompt": prompt}, config=config)
 
-    return response.content
+    return result.content
 
 
-#
-# def query_langchain(
-#     prompt: str,
-#     model: str = "gpt-3.5-turbo",
-#     system="You're a helpful assistant",
-#     **kwargs
-# ):
-#     client = Client()
-#
-#     response = client.chat.completions.create(
-#         messages=[
-#             {"role": "system", "content": system},
-#             {"role": "user", "content": prompt},
-#         ],
-#         model=model,
-#     )
-#     return response.choices[0].message.content
-# def query_langchain_wrapper(
-#     prompt: str,
-#     model: str = "gpt-3.5-turbo",
-#     system="You're a helpful assistant",
-#     **kwargs
-# ):
-#     # Build the langchain prompt
-#     langchain_prompt = build_langchain_prompt(system)
-#
-#     # Run the query using the langchain prompt and the provided model
-#     response = query_langchain(prompt=prompt, system=system, model_name=model, **kwargs)
-#
-#     return response
-
-
-# Example usage
 if __name__ == "__main__":
-    # system_message = "You are a helpful assistant
-
     load_dotenv()
     prompt = "Tell me a random scientific concept / theory"
-    # response = query_openai(prompt)
-    response = query_langchain(prompt)
+    response = query_langchain(prompt, use_langfuse=True)
     print(response)
